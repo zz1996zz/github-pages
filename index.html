@@ -1,555 +1,428 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>테트리스</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>야바위 게임 – HTML/CSS/JS</title>
+  <style>
+    :root{
+      --bg:#0f1221;
+      --panel:#141833;
+      --text:#e8ebff;
+      --muted:#aab0d3;
+      --accent:#6aa6ff;
+      --win:#34d399;
+      --lose:#f87171;
+      --cup:#2b3166;
+      --cup-edge:#1d224a;
+      --cup-highlight: #6aa6ff33;
+      --ball:#ffcc00;
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 10px;
-        }
+      --stage-max: 960px;
+      --cup-size: clamp(78px, 12vw, 140px);
+      --cup-radius: 18px;
+      --cup-lift: 18%;
+      --gap: clamp(12px, 4vw, 32px);
+      --panel-pad: clamp(12px, 2.6vw, 22px);
+    }
 
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, "Apple SD Gothic Neo", "맑은 고딕", sans-serif;
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 60% -10%, #1a1f45 0%, #0f1221 60%, #0b0d18 100%);
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        .game-board {
-            position: relative;
-            border: 3px solid #fff;
-            border-radius: 10px;
-            background: #000;
-            margin-bottom: 20px;
-        }
+    .wrap{
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      padding: 16px env(safe-area-inset-right) 32px env(safe-area-inset-left);
+    }
 
-        canvas {
-            display: block;
-            border-radius: 7px;
-        }
+    header{
+      width:100%;
+      max-width:var(--stage-max);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .title{
+      font-weight:800;
+      letter-spacing:0.2px;
+      font-size: clamp(18px, 3.6vw, 28px);
+      display:flex; align-items:center; gap:10px;
+    }
+    .title .dot{ width:10px;height:10px;border-radius:50%; background:var(--accent); box-shadow:0 0 16px var(--accent)}
 
-        .game-info {
-            display: flex;
-            gap: 30px;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+    .panel{
+      width:100%;
+      max-width:var(--stage-max);
+      background:linear-gradient(180deg, #171b3c 0%, #101433 100%);
+      border:1px solid #252a5a;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 #26306b;
+      border-radius: 16px;
+      padding: var(--panel-pad);
+    }
 
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    .controls{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between }
+    .controls .left, .controls .right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+    .label{ color:var(--muted); font-size: 14px }
 
-        .info-label {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
+    select, button, input[type="range"]{
+      appearance:none; -webkit-appearance:none;
+      background:#0f1433; color:var(--text);
+      border:1px solid #2d346b; border-radius:12px;
+      padding:10px 12px; font-weight:600;
+    }
+    select:focus, button:focus, input[type="range"]:focus{ outline:2px solid #3656b8; outline-offset:2px }
 
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            max-width: 300px;
-            margin-top: 20px;
-        }
+    button.primary{
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      border: none; color:white; padding: 12px 14px; border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(59,130,246,.35);
+      font-weight:800; letter-spacing:.2px;
+      cursor:pointer;
+    }
+    button.primary[disabled]{ opacity:.55; cursor:not-allowed }
 
-        .control-btn {
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
+    .score{ display:flex; gap:12px; align-items:center; }
+    .score .pill{
+      background:#0d1230; border:1px solid #2a3270; border-radius:999px; padding:8px 12px; font-weight:700; font-size:14px
+    }
+    .pill.win{ color:var(--win); border-color:#1d8b6a }
+    .pill.lose{ color:var(--lose); border-color:#943a3a }
 
-        .control-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.3);
-        }
+    .stage-panel{ display:grid; gap:14px }
+    .hint{ color:var(--muted); font-size:13px }
 
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
+    .stage{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16/9;
+      max-height: 66vh;
+      min-height: 300px;
+      border-radius: 18px;
+      background: radial-gradient(900px 500px at 50% 100%, #0e1334 0%, #0a0d23 50%, #080a1a 100%);
+      border:1px solid #23295a;
+      box-shadow: inset 0 6px 24px rgba(0,0,0,.4), 0 20px 40px rgba(0,0,0,.45);
+      overflow:hidden;
+      user-select:none;
+      touch-action: manipulation;
+    }
 
-        .rotate-btn {
-            grid-column: 2;
-        }
+    .table-line{ position:absolute; inset:auto 0 16%; height:2px; background: linear-gradient(90deg,#263072,transparent,#263072); opacity:.6 }
 
-        .left-btn {
-            grid-column: 1;
-            grid-row: 2;
-        }
+    .cup{
+      position:absolute;
+      width: var(--cup-size); height: calc(var(--cup-size) * 1.1);
+      border-radius: var(--cup-radius) var(--cup-radius) 6px 6px;
+      background: radial-gradient(120% 100% at 30% 20%, #3a4286 0%, var(--cup) 45%, var(--cup-edge) 100%);
+      border: 1px solid #1a1f48;
+      box-shadow: inset 0 2px 10px #00000055, 0 10px 24px rgba(0,0,0,.6);
+      transform: translate(-50%, -50%) translate3d(0,0,0);
+      top: 64%;
+      left: 50%;
+      display:grid; place-items:end center;
+      transition: transform var(--speed, .36s) cubic-bezier(.2,.7,.2,1);
+      will-change: transform;
+      cursor:pointer;
+    }
+    .cup::before{
+      content:""; position:absolute; inset:8px 8px auto 8px; height:32%; border-radius: 12px; background: linear-gradient(180deg, var(--cup-highlight), transparent);
+    }
+    .cup::after{
+      content:""; position:absolute; inset:auto 22% -8px 22%; height:12px; border-radius: 999px; background: radial-gradient(100% 100% at 50% 20%, #00000077 10%, transparent 70%);
+      filter: blur(2px);
+    }
 
-        .down-btn {
-            grid-column: 2;
-            grid-row: 2;
-        }
+    .cup[aria-disabled="true"]{ pointer-events:none }
 
-        .right-btn {
-            grid-column: 3;
-            grid-row: 2;
-        }
+    .cup.lift{ transform: translate(var(--tx,0), var(--ty,0)) translateY(calc(-1 * var(--cup-lift))); }
 
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            display: none;
-        }
+    .ball{ position:absolute; width: clamp(16px, 2.5vw, 26px); height: clamp(16px, 2.5vw, 26px); border-radius:50%; background: radial-gradient(100% 100% at 30% 30%, #fff4b2, var(--ball));
+      top: calc(64% + 4px); left: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 4px 12px #00000077;
+      transition: left .25s ease-out, opacity .2s ease-out;
+      will-change:left,opacity;
+      opacity:0; pointer-events:none;
+    }
 
-        .restart-btn {
-            margin-top: 20px;
-            padding: 15px 30px;
-            background: #4CAF50;
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
+    .toast{
+      position:absolute; inset: 10px 10px auto auto; z-index: 3;
+      background:#0c1130cc; border:1px solid #2a3270; color:var(--text);
+      padding:8px 12px; border-radius:10px; font-size:14px; backdrop-filter: blur(6px);
+      transform: translateY(-4px); opacity:0; transition: .25s ease;
+    }
+    .toast.show{ transform: none; opacity:1 }
 
-        .restart-btn:hover {
-            background: #45a049;
-        }
+    .footer-hint{ color:var(--muted); font-size:12px; text-align:center; margin-top:10px }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0a0e27; border:1px solid #2a3270; padding:2px 6px; border-radius:6px }
 
-        @media (max-width: 600px) {
-            .game-container {
-                padding: 15px;
-            }
-            
-            .game-info {
-                gap: 20px;
-                font-size: 16px;
-            }
-            
-            .controls {
-                max-width: 250px;
-                gap: 8px;
-            }
-            
-            .control-btn {
-                padding: 12px 16px;
-                font-size: 14px;
-            }
-        }
-    </style>
+  </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-info">
-            <div class="info-item">
-                <div class="info-label">SCORE</div>
-                <div id="score">0</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">LEVEL</div>
-                <div id="level">1</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">LINES</div>
-                <div id="lines">0</div>
-            </div>
+  <div class="wrap">
+    <header>
+      <div class="title"><span class="dot"></span> 야바위 게임</div>
+      <div class="score">
+        <div class="pill">라운드 <span id="round">0</span></div>
+        <div class="pill win">정답 <span id="wins">0</span></div>
+        <div class="pill lose">실패 <span id="losses">0</span></div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="controls">
+        <div class="left">
+          <label class="label" for="difficulty">난이도</label>
+          <select id="difficulty" aria-label="난이도">
+            <option value="easy">쉬움</option>
+            <option value="normal" selected>보통</option>
+            <option value="hard">어려움</option>
+            <option value="insane">매우 어려움</option>
+          </select>
+          <span class="label">섞기 횟수</span>
+          <input type="range" id="swaps" min="6" max="24" step="1" value="10"/>
+          <span id="swapsVal" class="label">10회</span>
         </div>
-        
-        <div class="game-board">
-            <canvas id="tetris" width="300" height="600"></canvas>
-            <div class="game-over" id="gameOver">
-                <div>게임 오버!</div>
-                <div style="font-size: 18px; margin: 10px 0;">점수: <span id="finalScore">0</span></div>
-                <button class="restart-btn" onclick="restartGame()">다시 시작</button>
-            </div>
+        <div class="right">
+          <button id="startBtn" class="primary">라운드 시작</button>
         </div>
-        
-        <div class="controls">
-            <button class="control-btn rotate-btn" onclick="rotatePiece()">↻ 회전</button>
-            <button class="control-btn left-btn" onclick="movePiece(-1)">← 좌</button>
-            <button class="control-btn down-btn" onclick="dropPiece()">↓ 하</button>
-            <button class="control-btn right-btn" onclick="movePiece(1)">→ 우</button>
-        </div>
-    </div>
+      </div>
+    </section>
 
-    <script>
-        const canvas = document.getElementById('tetris');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
-        const linesElement = document.getElementById('lines');
-        const gameOverElement = document.getElementById('gameOver');
-        const finalScoreElement = document.getElementById('finalScore');
+    <section class="panel stage-panel">
+      <div class="hint">공 위치를 1초간 보여준 뒤 컵을 섞습니다. 섞기가 끝나면 컵을 눌러 맞춰보세요!</div>
+      <div class="stage" id="stage" role="application" aria-label="야바위 게임 무대">
+        <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+        <div class="table-line"></div>
+        <button class="cup" id="cup0" aria-label="왼쪽 컵" aria-disabled="true"></button>
+        <button class="cup" id="cup1" aria-label="가운데 컵" aria-disabled="true"></button>
+        <button class="cup" id="cup2" aria-label="오른쪽 컵" aria-disabled="true"></button>
+        <div class="ball" id="ball" aria-hidden="true"></div>
+      </div>
+      <div class="footer-hint">키보드 <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span> 선택, <span class="kbd">Enter</span> 시작</div>
+    </section>
+  </div>
 
-        // 게임 설정
-        const BOARD_WIDTH = 10;
-        const BOARD_HEIGHT = 20;
-        const BLOCK_SIZE = 30;
+  <script>
+  (function(){
+    const stage = document.getElementById('stage');
+    const cups = [0,1,2].map(i => document.getElementById('cup'+i));
+    const ball = document.getElementById('ball');
+    const startBtn = document.getElementById('startBtn');
+    const difficultySel = document.getElementById('difficulty');
+    const swapsInput = document.getElementById('swaps');
+    const swapsVal = document.getElementById('swapsVal');
+    const roundEl = document.getElementById('round');
+    const winsEl = document.getElementById('wins');
+    const lossesEl = document.getElementById('losses');
+    const toast = document.getElementById('toast');
 
-        // 게임 상태
-        let board = [];
-        let currentPiece = null;
-        let score = 0;
-        let level = 1;
-        let lines = 0;
-        let gameRunning = true;
-        let dropTime = 0;
-        let dropInterval = 1000;
+    let xPositions = [0,0,0];
+    let mapping = [0,1,2]; // posIndex -> cupIndex currently occupying that position
+    let posOfCup = [0,1,2]; // inverse mapping: cupIndex -> posIndex
+    let speed = 360; // ms
+    let shuffling = false;
+    let round = 0, wins = 0, losses = 0;
+    let ballCup = 1; // cup index that holds the ball (initial center)
 
-        // 테트리스 조각 정의
-        const PIECES = [
-            {
-                shape: [
-                    [1, 1, 1, 1]
-                ],
-                color: '#00f0f0'
-            },
-            {
-                shape: [
-                    [1, 1],
-                    [1, 1]
-                ],
-                color: '#f0f000'
-            },
-            {
-                shape: [
-                    [0, 1, 0],
-                    [1, 1, 1]
-                ],
-                color: '#a000f0'
-            },
-            {
-                shape: [
-                    [0, 1, 1],
-                    [1, 1, 0]
-                ],
-                color: '#00f000'
-            },
-            {
-                shape: [
-                    [1, 1, 0],
-                    [0, 1, 1]
-                ],
-                color: '#f00000'
-            },
-            {
-                shape: [
-                    [1, 0, 0],
-                    [1, 1, 1]
-                ],
-                color: '#f0a000'
-            },
-            {
-                shape: [
-                    [0, 0, 1],
-                    [1, 1, 1]
-                ],
-                color: '#0000f0'
-            }
-        ];
+    // persistent best score (optional)
+    let best = JSON.parse(localStorage.getItem('shell-best')||'{}');
 
-        // 게임 초기화
-        function initGame() {
-            // 보드 초기화
-            board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
-            score = 0;
-            level = 1;
-            lines = 0;
-            gameRunning = true;
-            dropTime = 0;
-            dropInterval = 1000;
-            
-            updateUI();
-            spawnPiece();
-            gameOverElement.style.display = 'none';
-        }
+    function setToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(setToast._t);
+      setToast._t = setTimeout(()=> toast.classList.remove('show'), 1800);
+    }
 
-        // 새 조각 생성
-        function spawnPiece() {
-            const pieceType = Math.floor(Math.random() * PIECES.length);
-            currentPiece = {
-                shape: PIECES[pieceType].shape,
-                color: PIECES[pieceType].color,
-                x: Math.floor(BOARD_WIDTH / 2) - Math.floor(PIECES[pieceType].shape[0].length / 2),
-                y: 0
-            };
+    function updateSwapsVal(){ swapsVal.textContent = swapsInput.value + '회'; }
 
-            if (isColliding(currentPiece.x, currentPiece.y, currentPiece.shape)) {
-                gameOver();
-            }
-        }
+    function computePositions(){
+      const rect = stage.getBoundingClientRect();
+      const cupW = cups[0].getBoundingClientRect().width || parseFloat(getComputedStyle(cups[0]).width);
+      const centerY = rect.height * 0.64; // keep in sync with .cup top:64%
+      const centerX = rect.width/2;
+      const spacing = Math.min(rect.width * 0.26, 220);
+      xPositions = [centerX - spacing, centerX, centerX + spacing];
+      cups.forEach((cup, i)=>{
+        const pos = posOfCup[i];
+        const tx = (xPositions[pos] - centerX);
+        cup.style.setProperty('--tx', tx.toFixed(2) + 'px');
+        cup.style.setProperty('--ty', (centerY - rect.height*0.64).toFixed(2) + 'px');
+        cup.style.transform = `translate(${tx}px, 0)`; // baseline (overrides initial translate(-50%,-50%) via css? We'll keep origin center by initial and add translate)
+      });
+      updateBallPosition();
+    }
 
-        // 충돌 검사
-        function isColliding(x, y, shape) {
-            for (let row = 0; row < shape.length; row++) {
-                for (let col = 0; col < shape[row].length; col++) {
-                    if (shape[row][col]) {
-                        const newX = x + col;
-                        const newY = y + row;
-                        
-                        if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT) {
-                            return true;
-                        }
-                        
-                        if (newY >= 0 && board[newY][newX]) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
+    function setCupsInteractive(enabled){ cups.forEach(c => c.setAttribute('aria-disabled', enabled? 'false' : 'true')); }
 
-        // 조각 이동
-        function movePiece(dir) {
-            if (!gameRunning) return;
-            
-            const newX = currentPiece.x + dir;
-            if (!isColliding(newX, currentPiece.y, currentPiece.shape)) {
-                currentPiece.x = newX;
-                draw();
-            }
-        }
+    function difficultyToParams(val){
+      switch(val){
+        case 'easy': return {speed: 420, delay: 80};
+        case 'normal': return {speed: 340, delay: 60};
+        case 'hard': return {speed: 260, delay: 45};
+        case 'insane': return {speed: 190, delay: 36};
+        default: return {speed: 340, delay: 60};
+      }
+    }
 
-        // 조각 회전
-        function rotatePiece() {
-            if (!gameRunning) return;
-            
-            const rotated = currentPiece.shape[0].map((_, index) =>
-                currentPiece.shape.map(row => row[index]).reverse()
-            );
-            
-            if (!isColliding(currentPiece.x, currentPiece.y, rotated)) {
-                currentPiece.shape = rotated;
-                draw();
-            }
-        }
+    // Promise transition end helper
+    function onceTransition(el){
+      return new Promise(res=>{
+        const onEnd = (e)=>{
+          if (e.target !== el) return;
+          el.removeEventListener('transitionend', onEnd);
+          res();
+        };
+        el.addEventListener('transitionend', onEnd, {once:false});
+      });
+    }
 
-        // 조각 아래로 이동
-        function dropPiece() {
-            if (!gameRunning) return;
-            
-            const newY = currentPiece.y + 1;
-            if (!isColliding(currentPiece.x, newY, currentPiece.shape)) {
-                currentPiece.y = newY;
-            } else {
-                placePiece();
-                clearLines();
-                spawnPiece();
-            }
-            draw();
-        }
+    function sleep(ms){ return new Promise(r=> setTimeout(r, ms)); }
 
-        // 조각을 보드에 배치
-        function placePiece() {
-            for (let row = 0; row < currentPiece.shape.length; row++) {
-                for (let col = 0; col < currentPiece.shape[row].length; col++) {
-                    if (currentPiece.shape[row][col]) {
-                        const x = currentPiece.x + col;
-                        const y = currentPiece.y + row;
-                        if (y >= 0) {
-                            board[y][x] = currentPiece.color;
-                        }
-                    }
-                }
-            }
-        }
+    function updateBallPosition(visible=false){
+      const rect = stage.getBoundingClientRect();
+      const centerX = rect.width/2;
+      const x = xPositions[posOfCup[ballCup]]; // center x of the cup holding the ball
+      ball.style.left = ((x / rect.width) * 100) + '%';
+      ball.style.opacity = visible ? 1 : 0;
+    }
 
-        // 완성된 줄 제거
-        function clearLines() {
-            let linesCleared = 0;
-            
-            for (let row = BOARD_HEIGHT - 1; row >= 0; row--) {
-                if (board[row].every(cell => cell !== 0)) {
-                    board.splice(row, 1);
-                    board.unshift(Array(BOARD_WIDTH).fill(0));
-                    linesCleared++;
-                    row++; // 같은 행을 다시 검사
-                }
-            }
-            
-            if (linesCleared > 0) {
-                lines += linesCleared;
-                score += linesCleared * 100 * level;
-                level = Math.floor(lines / 10) + 1;
-                dropInterval = Math.max(50, 1000 - (level - 1) * 100);
-                updateUI();
-            }
-        }
+    async function flashBall(){
+      updateBallPosition(true);
+      await sleep(900);
+      ball.style.opacity = 0;
+    }
 
-        // UI 업데이트
-        function updateUI() {
-            scoreElement.textContent = score;
-            levelElement.textContent = level;
-            linesElement.textContent = lines;
-        }
+    async function swapPositions(i, j){
+      // i, j are position indices to swap occupants
+      const cupI = mapping[i];
+      const cupJ = mapping[j];
+      // update inverse mapping posOfCup
+      posOfCup[cupI] = j;
+      posOfCup[cupJ] = i;
+      // update forward mapping
+      mapping[i] = cupJ;
+      mapping[j] = cupI;
 
-        // 게임 오버
-        function gameOver() {
-            gameRunning = false;
-            finalScoreElement.textContent = score;
-            gameOverElement.style.display = 'block';
-        }
+      // animate cups to new x via CSS variable --tx
+      const centerX = stage.getBoundingClientRect().width/2;
+      const txI = (xPositions[j] - centerX);
+      const txJ = (xPositions[i] - centerX);
+      cups[cupI].style.setProperty('--tx', txI.toFixed(2) + 'px');
+      cups[cupJ].style.setProperty('--tx', txJ.toFixed(2) + 'px');
+      cups[cupI].style.transform = `translate(${txI}px, 0)`;
+      cups[cupJ].style.transform = `translate(${txJ}px, 0)`;
+      await Promise.all([onceTransition(cups[cupI]), onceTransition(cups[cupJ])]);
+    }
 
-        // 게임 재시작
-        function restartGame() {
-            initGame();
-        }
+    async function shuffle(times){
+      shuffling = true;
+      setCupsInteractive(false);
+      cups.forEach(c=> c.style.setProperty('--speed', (speed/1000)+'s'));
+      for (let k=0; k<times; k++){
+        // pick two distinct positions to swap (0,1,2)
+        let a = Math.floor(Math.random()*3);
+        let b = (a + 1 + Math.floor(Math.random()*2)) % 3; // ensure different, biased to neighbor for nicer animation
+        await swapPositions(a,b);
+        // small dead time for visual clarity
+        await sleep(Math.max(0, Math.floor(speed*0.12)));
+      }
+      shuffling = false;
+      setCupsInteractive(true);
+    }
 
-        // 그리기 함수
-        function draw() {
-            // 화면 지우기
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+    async function startRound(){
+      if (shuffling) return;
+      round++;
+      roundEl.textContent = String(round);
+      startBtn.disabled = true;
+      setCupsInteractive(false);
+      setToast('공 위치 미리보기! (1초)');
 
-            // 보드 그리기
-            for (let row = 0; row < BOARD_HEIGHT; row++) {
-                for (let col = 0; col < BOARD_WIDTH; col++) {
-                    if (board[row][col]) {
-                        ctx.fillStyle = board[row][col];
-                        ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-                    }
-                }
-            }
+      // choose random cup for ball
+      ballCup = Math.floor(Math.random()*3);
+      updateBallPosition(true);
+      await sleep(1000);
+      ball.style.opacity = 0;
 
-            // 현재 조각 그리기
-            if (currentPiece) {
-                ctx.fillStyle = currentPiece.color;
-                for (let row = 0; row < currentPiece.shape.length; row++) {
-                    for (let col = 0; col < currentPiece.shape[row].length; col++) {
-                        if (currentPiece.shape[row][col]) {
-                            ctx.fillRect(
-                                (currentPiece.x + col) * BLOCK_SIZE,
-                                (currentPiece.y + row) * BLOCK_SIZE,
-                                BLOCK_SIZE - 1,
-                                BLOCK_SIZE - 1
-                            );
-                        }
-                    }
-                }
-            }
-        }
+      // set speed by difficulty
+      const {speed:sp, delay} = difficultyToParams(difficultySel.value);
+      speed = sp;
+      cups.forEach(c=> c.style.setProperty('--speed', (speed/1000)+'s'));
 
-        // 키보드 이벤트
-        document.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    movePiece(-1);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    movePiece(1);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    dropPiece();
-                    break;
-                case 'ArrowUp':
-                case ' ':
-                    e.preventDefault();
-                    rotatePiece();
-                    break;
-            }
-        });
+      // shuffle mapping many times
+      await shuffle(parseInt(swapsInput.value,10));
+      setToast('이제 맞춰보세요!');
+    }
 
-        // 터치 이벤트 (스와이프)
-        let touchStartX = 0;
-        let touchStartY = 0;
+    function endRound(correct){
+      if (correct){ wins++; winsEl.textContent = String(wins); setToast('정답! 🎉'); } else { losses++; lossesEl.textContent = String(losses); setToast('아쉽네요! 😭'); }
+      // update best
+      const total = wins + losses;
+      const acc = total? Math.round((wins/total)*100) : 0;
+      best = {wins, losses, acc};
+      localStorage.setItem('shell-best', JSON.stringify(best));
+      startBtn.disabled = false;
+    }
 
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        });
+    async function onPick(cupIndex){
+      if (shuffling) return;
+      if (cups[cupIndex].getAttribute('aria-disabled') === 'true') return;
+      setCupsInteractive(false);
 
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (!gameRunning) return;
-            
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // 좌우 스와이프
-                if (Math.abs(deltaX) > 30) {
-                    movePiece(deltaX > 0 ? 1 : -1);
-                }
-            } else {
-                // 상하 스와이프
-                if (deltaY > 30) {
-                    dropPiece();
-                } else if (deltaY < -30) {
-                    rotatePiece();
-                }
-            }
-        });
+      // lift clicked cup
+      cups[cupIndex].classList.add('lift');
+      // vibrate feedback
+      try{ if (navigator.vibrate) navigator.vibrate([cupIndex===ballCup? 35:120]); }catch{}
 
-        // 탭으로 회전
-        canvas.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (gameRunning) {
-                rotatePiece();
-            }
-        });
+      // move ball under its cup and reveal
+      updateBallPosition(true);
+      await sleep(650);
 
-        // 게임 루프
-        let lastTime = 0;
-        function gameLoop(time) {
-            if (gameRunning) {
-                const deltaTime = time - lastTime;
-                dropTime += deltaTime;
-                
-                if (dropTime > dropInterval) {
-                    dropPiece();
-                    dropTime = 0;
-                }
-            }
-            
-            lastTime = time;
-            requestAnimationFrame(gameLoop);
-        }
+      // put down cup
+      cups[cupIndex].classList.remove('lift');
+      await sleep(200);
+      ball.style.opacity = 0;
 
-        // 게임 시작
-        initGame();
-        requestAnimationFrame(gameLoop);
-    </script>
+      endRound(cupIndex===ballCup);
+    }
+
+    function initPositions(){
+      // initial layout: cups in 0,1,2 positions, ball at cup1
+      mapping = [0,1,2];
+      posOfCup = [0,1,2];
+      computePositions();
+    }
+
+    // Event bindings
+    window.addEventListener('resize', computePositions);
+    startBtn.addEventListener('click', startRound);
+    cups.forEach((cup, idx)=> cup.addEventListener('click', ()=> onPick(idx)));
+    swapsInput.addEventListener('input', updateSwapsVal);
+    updateSwapsVal();
+
+    // keyboard support
+    window.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter'){ startRound(); }
+      else if (['1','2','3'].includes(e.key)){
+        onPick(parseInt(e.key,10)-1);
+      }
+    });
+
+    // initial
+    initPositions();
+    setToast('난이도와 섞기 횟수를 고르고 시작해보세요!');
+  })();
+  </script>
 </body>
 </html>
